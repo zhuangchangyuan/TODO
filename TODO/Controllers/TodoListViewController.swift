@@ -7,17 +7,23 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     var itemArray = [Item]()
     let defaults = UserDefaults.standard
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
     
     override func viewDidLoad() {
+        
         super.viewDidLoad()
         
-         
+        // let request: NSFetchRequest = Item.fetchRequest()
         loadItems()
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        
+        
         // Do any additional setup after loading the view.
     }
     //MARK: - Table View DataSource methods
@@ -39,10 +45,13 @@ class TodoListViewController: UITableViewController {
     }
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        itemArray[indexPath.row].done = itemArray[indexPath.row].done
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+       // let title = itemArray[indexPath.row].title ?? "test"
+        //itemArray[indexPath.row].setValue(title + " - (已完成）" , forKey: "title")
         saveItems()
-        
-        
+        //tableView.beginUpdates()
+        //tableView.reloadRows(at: [indexPath], with: UITableView.RowAnimation.none)
+       // tableView.endUpdates()
       
        
         tableView.deselectRow(at: indexPath, animated: true)
@@ -52,9 +61,12 @@ class TodoListViewController: UITableViewController {
         var textField = UITextField()
         let alert = UIAlertController(title: "添加一个新的ToDo项目", message: "",preferredStyle: .alert)
         let action = UIAlertAction(title: "添加项目", style: .default) { (action) in
-            let newItem = Item()
-            newItem.title = textField.text!
             
+           
+            let newItem = Item(context: self.context)
+            
+            newItem.title = textField.text!
+            newItem.done = false
             self.itemArray.append(newItem)
            self.saveItems()
                 
@@ -71,23 +83,47 @@ class TodoListViewController: UITableViewController {
     }
     
     func saveItems() {
-        let encoder = PropertyListEncoder()
+       // let encoder = PropertyListEncoder()
         do {
-            let data = try encoder.encode(self.itemArray)
-            try data.write(to: self.dataFilePath!)
+           
+            
+            try context.save()
         }catch {
-            print("编码错误：\(error)")
+            print("保存context错误：\(error)")
         }
+        tableView.reloadData()
     }
-    func loadItems()  {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            }catch {
-                print("解码错!")
-            }
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest())  {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        }catch {
+            print("从context获取数据错误： \(error)")
+        }
+        tableView.reloadData()
+        
+        
+    }
+}
+extension TodoListViewController:UISearchBarDelegate {
+    func  searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        print(searchBar.text!)
+        request.predicate = NSPredicate(format: "title CONTAINS[c] %@", searchBar.text!)
+       
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        loadItems()
+        do {
+            itemArray = try context.fetch(request)
+        }catch {
+            print("从context获取数据错误：\(error)")
+        }
+        tableView.reloadData()
+    }
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            searchBar.resignFirstResponder()
         }
     }
 }
-
