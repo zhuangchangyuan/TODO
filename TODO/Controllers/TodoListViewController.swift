@@ -25,7 +25,7 @@ class TodoListViewController: UITableViewController {
         super.viewDidLoad()
         
         // let request: NSFetchRequest = Item.fetchRequest()
-        // loadItems()
+        //loadItems()
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
         
@@ -101,6 +101,10 @@ class TodoListViewController: UITableViewController {
     }
     func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(),predicate: NSPredicate? = nil)  {
         let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        //let categoryPredicate = NSPredicate(format: "parentCategory.name CONTAINS[c] %@", selectedCategory!.name!)
+        //let categoryPredicate = NSPredicate(format: "title CONTAINS[c] %@", selectedCategory!.name!)
+        print("******categoryPredicate** " + selectedCategory!.name!)
+       
         if let addtionalPredicate = predicate {
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, addtionalPredicate])
         }else {
@@ -108,9 +112,12 @@ class TodoListViewController: UITableViewController {
         }
         
         
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        //let request: NSFetchRequest<Item> = Item.fetchRequest()
+         //print("******request: NSFetchRequest<Item>*** " + request.value(forKey: ""))
         do {
             itemArray = try context.fetch(request)
+            
         }catch {
             print("从context获取数据错误： \(error)")
         }
@@ -122,9 +129,9 @@ class TodoListViewController: UITableViewController {
 extension TodoListViewController:UISearchBarDelegate {
     func  searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
-        print(searchBar.text!)
-        request.predicate = NSPredicate(format: "title CONTAINS[c] %@", searchBar.text!)
         
+        request.predicate = NSPredicate(format: "title CONTAINS[c] %@", searchBar.text!)
+        print("searchBarSearchButtonClicked=******"+searchBar.text!)
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         loadItems()
         do {

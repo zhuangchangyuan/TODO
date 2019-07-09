@@ -42,12 +42,12 @@ class CategoryViewController: UITableViewController {
         
         let alert = UIAlertController(title: "添加新的类别", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "添加", style: .default) { (action) in
-            print("****sssdddd*ssss")
+           // print("****sssdddd*ssss")
             let newCategory =  Category(context: self.context)
             newCategory.name = textField.text!
             
             self.categories.append(newCategory)
-            print("*****")
+            //print("*****")
             self.saveCategories()
             
             
