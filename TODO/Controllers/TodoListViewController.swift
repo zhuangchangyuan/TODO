@@ -12,6 +12,11 @@ import CoreData
 class TodoListViewController: UITableViewController {
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     var itemArray = [Item]()
+    var selectedCategory: Category? {
+        didSet {
+            loadItems()
+        }
+    }
     let defaults = UserDefaults.standard
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
     
@@ -20,7 +25,7 @@ class TodoListViewController: UITableViewController {
         super.viewDidLoad()
         
         // let request: NSFetchRequest = Item.fetchRequest()
-        loadItems()
+        // loadItems()
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
         
@@ -46,30 +51,31 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-       // let title = itemArray[indexPath.row].title ?? "test"
+        // let title = itemArray[indexPath.row].title ?? "test"
         //itemArray[indexPath.row].setValue(title + " - (已完成）" , forKey: "title")
         saveItems()
         //tableView.beginUpdates()
         //tableView.reloadRows(at: [indexPath], with: UITableView.RowAnimation.none)
-       // tableView.endUpdates()
-      
-       
+        // tableView.endUpdates()
+        
+        
         tableView.deselectRow(at: indexPath, animated: true)
     }
-
+    
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
         let alert = UIAlertController(title: "添加一个新的ToDo项目", message: "",preferredStyle: .alert)
         let action = UIAlertAction(title: "添加项目", style: .default) { (action) in
             
-           
+            
             let newItem = Item(context: self.context)
             
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
-           self.saveItems()
-                
+            self.saveItems()
+            
             self.tableView.reloadData()
             
         }
@@ -83,9 +89,9 @@ class TodoListViewController: UITableViewController {
     }
     
     func saveItems() {
-       // let encoder = PropertyListEncoder()
+        // let encoder = PropertyListEncoder()
         do {
-           
+            
             
             try context.save()
         }catch {
@@ -93,7 +99,15 @@ class TodoListViewController: UITableViewController {
         }
         tableView.reloadData()
     }
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest())  {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(),predicate: NSPredicate? = nil)  {
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        if let addtionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, addtionalPredicate])
+        }else {
+            request.predicate = categoryPredicate
+        }
+        
+        
         let request: NSFetchRequest<Item> = Item.fetchRequest()
         do {
             itemArray = try context.fetch(request)
@@ -110,7 +124,7 @@ extension TodoListViewController:UISearchBarDelegate {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
         print(searchBar.text!)
         request.predicate = NSPredicate(format: "title CONTAINS[c] %@", searchBar.text!)
-       
+        
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         loadItems()
         do {
@@ -126,4 +140,5 @@ extension TodoListViewController:UISearchBarDelegate {
             searchBar.resignFirstResponder()
         }
     }
+    
 }
